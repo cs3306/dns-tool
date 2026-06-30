@@ -39,6 +39,7 @@ Thumbs.db
 # Local docker-compose overrides (put real domain/port here)
 docker-compose.override.yml
 docker-compose.local.yml
+docker-compose.yml
 
 # Nginx config contains server-specific paths, manage separately
 nginx.conf
