@@ -1,0 +1,18 @@
+# 复制此文件为 docker-compose.override.yml，填入实际配置
+# docker-compose.override.yml 已加入 .gitignore，不会提交到 git
+#
+# 用法：
+#   cp docker-compose.override.example.yml docker-compose.override.yml
+#   vim docker-compose.override.yml
+#   docker compose up -d      # docker compose 会自动合并 override 文件
+
+version: '3.8'
+
+services:
+  frontend:
+    ports:
+      - "3000:3000"       # 对外暴露端口，或改为 "127.0.0.1:3000:3000" 只监听本地
+    environment:
+      - NODE_ENV=production
+      - SITE_URL=https://your-domain.com   # 改成你的实际域名
+      - MIDDLEWARE_URL=http://middleware:5000

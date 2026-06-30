@@ -1,0 +1,28 @@
+{
+  "name": "dns-lookup-frontend",
+  "version": "1.0.0",
+  "description": "DNS Lookup Frontend with API Proxy",
+  "main": "app.js",
+  "scripts": {
+    "start": "node app.js",
+    "dev": "nodemon app.js",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "dependencies": {
+    "express": "^4.18.2",
+    "cors": "^2.8.5",
+    "helmet": "^7.0.0",
+    "compression": "^1.7.4",
+    "http-proxy-middleware": "^2.0.6",
+    "node-fetch": "^2.7.0"
+  },
+  "devDependencies": {
+    "nodemon": "^3.0.1"
+  },
+  "keywords": ["dns", "lookup", "frontend", "proxy"],
+  "author": "cs3306",
+  "license": "MIT",
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}

@@ -1,0 +1,634 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DNS 查询工具</title>
+    <style>
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+        :root {
+            --bg: #0f172a;
+            --surface: #1e293b;
+            --surface2: #273549;
+            --border: #334155;
+            --accent: #3b82f6;
+            --accent-h: #2563eb;
+            --green: #22c55e;
+            --red: #ef4444;
+            --yellow: #f59e0b;
+            --text: #e2e8f0;
+            --text-muted: #94a3b8;
+            --radius: 10px;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            min-height: 100vh;
+            line-height: 1.6;
+        }
+
+        header {
+            background: var(--surface);
+            border-bottom: 1px solid var(--border);
+            padding: 1rem 2rem;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        header h1 { font-size: 1.4rem; font-weight: 700; }
+        header h1 span { color: var(--accent); }
+
+        .header-status {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-size: 0.85rem;
+            color: var(--text-muted);
+        }
+
+        .status-dot {
+            width: 8px; height: 8px;
+            border-radius: 50%;
+            background: var(--green);
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.4; }
+        }
+
+        main {
+            max-width: 960px;
+            margin: 0 auto;
+            padding: 2rem 1rem;
+        }
+
+        /* Search card */
+        .search-card {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            padding: 1.5rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .search-row {
+            display: flex;
+            gap: 0.75rem;
+            margin-bottom: 0.75rem;
+        }
+
+        input[type="text"], input[type="number"], select {
+            background: var(--bg);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            color: var(--text);
+            padding: 0.6rem 0.9rem;
+            font-size: 0.95rem;
+            outline: none;
+            transition: border-color 0.2s;
+        }
+
+        input[type="text"]:focus, input[type="number"]:focus, select:focus {
+            border-color: var(--accent);
+        }
+
+        #domainInput { flex: 1; }
+
+        .btn {
+            padding: 0.6rem 1.2rem;
+            border-radius: 8px;
+            border: none;
+            cursor: pointer;
+            font-size: 0.9rem;
+            font-weight: 600;
+            transition: background 0.2s, transform 0.1s;
+            white-space: nowrap;
+        }
+
+        .btn:active { transform: scale(0.97); }
+
+        .btn-primary { background: var(--accent); color: #fff; }
+        .btn-primary:hover { background: var(--accent-h); }
+
+        .btn-secondary {
+            background: var(--surface2);
+            color: var(--text);
+            border: 1px solid var(--border);
+        }
+
+        .btn-secondary:hover { background: var(--border); }
+
+        .btn-danger { background: #7f1d1d; color: #fca5a5; border: 1px solid #991b1b; }
+        .btn-danger:hover { background: #991b1b; }
+
+        .action-row {
+            display: flex;
+            gap: 0.5rem;
+            flex-wrap: wrap;
+        }
+
+        /* Examples */
+        .examples {
+            margin-top: 0.75rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            flex-wrap: wrap;
+        }
+
+        .examples-label { font-size: 0.8rem; color: var(--text-muted); }
+
+        .example-btn {
+            background: transparent;
+            border: 1px solid var(--border);
+            border-radius: 20px;
+            color: var(--text-muted);
+            cursor: pointer;
+            font-size: 0.8rem;
+            padding: 0.2rem 0.7rem;
+            transition: all 0.2s;
+        }
+
+        .example-btn:hover { border-color: var(--accent); color: var(--accent); }
+
+        /* Advanced options */
+        .advanced-panel {
+            margin-top: 1rem;
+            padding-top: 1rem;
+            border-top: 1px solid var(--border);
+        }
+
+        .advanced-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 0.75rem;
+        }
+
+        .form-group label {
+            display: block;
+            font-size: 0.8rem;
+            color: var(--text-muted);
+            margin-bottom: 0.3rem;
+        }
+
+        .form-group select, .form-group input {
+            width: 100%;
+        }
+
+        select[multiple] { height: 120px; }
+
+        /* Batch */
+        .batch-panel {
+            margin-top: 1rem;
+            padding-top: 1rem;
+            border-top: 1px solid var(--border);
+        }
+
+        #batchDomains {
+            width: 100%;
+            background: var(--bg);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            color: var(--text);
+            padding: 0.7rem;
+            font-size: 0.9rem;
+            resize: vertical;
+            outline: none;
+            min-height: 100px;
+            font-family: monospace;
+        }
+
+        #batchDomains:focus { border-color: var(--accent); }
+
+        /* Loading */
+        #loadingIndicator {
+            text-align: center;
+            padding: 2rem;
+            color: var(--text-muted);
+        }
+
+        .spinner {
+            width: 36px; height: 36px;
+            border: 3px solid var(--border);
+            border-top-color: var(--accent);
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+            margin: 0 auto 0.75rem;
+        }
+
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        /* Results */
+        #resultsSection { margin-top: 1.5rem; }
+
+        .results-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 1rem;
+        }
+
+        .results-header h2 { font-size: 1.1rem; }
+
+        .results-actions { display: flex; gap: 0.5rem; }
+
+        .domain-result {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            padding: 1.25rem;
+            margin-bottom: 1rem;
+            animation: fadeIn 0.3s ease both;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(8px); }
+            to   { opacity: 1; transform: translateY(0); }
+        }
+
+        .domain-header {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            margin-bottom: 0.75rem;
+            flex-wrap: wrap;
+        }
+
+        .domain-name { font-size: 1.05rem; font-weight: 700; }
+
+        .status {
+            padding: 0.15rem 0.6rem;
+            border-radius: 20px;
+            font-size: 0.78rem;
+            font-weight: 600;
+        }
+
+        .status.success { background: #14532d; color: #86efac; }
+        .status.error   { background: #7f1d1d; color: #fca5a5; }
+
+        .dns-server, .cache-indicator {
+            font-size: 0.78rem;
+            color: var(--text-muted);
+            background: var(--surface2);
+            padding: 0.15rem 0.6rem;
+            border-radius: 20px;
+        }
+
+        .performance-info {
+            display: flex;
+            gap: 1rem;
+            font-size: 0.82rem;
+            color: var(--text-muted);
+            margin-bottom: 0.75rem;
+            flex-wrap: wrap;
+        }
+
+        .statistics {
+            background: var(--surface2);
+            border-radius: 8px;
+            padding: 0.75rem 1rem;
+            margin-bottom: 0.75rem;
+        }
+
+        .statistics h4 { font-size: 0.88rem; margin-bottom: 0.5rem; color: var(--text-muted); }
+
+        .stats-grid {
+            display: flex;
+            gap: 1.5rem;
+            flex-wrap: wrap;
+        }
+
+        .stat-item { text-align: center; }
+        .stat-value { font-size: 1.4rem; font-weight: 700; color: var(--accent); }
+        .stat-label { font-size: 0.75rem; color: var(--text-muted); }
+
+        /* Records grid */
+        .records-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 0.75rem;
+        }
+
+        .record-type-group {
+            background: var(--surface2);
+            border-radius: 8px;
+            overflow: hidden;
+        }
+
+        .record-type-title {
+            background: var(--border);
+            padding: 0.4rem 0.75rem;
+            font-size: 0.82rem;
+            font-weight: 700;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .record-count {
+            background: var(--accent);
+            color: #fff;
+            border-radius: 10px;
+            padding: 0 0.4rem;
+            font-size: 0.75rem;
+        }
+
+        .record-item {
+            padding: 0.5rem 0.75rem;
+            border-bottom: 1px solid var(--border);
+            cursor: pointer;
+            transition: background 0.15s;
+        }
+
+        .record-item:last-child { border-bottom: none; }
+        .record-item:hover { background: var(--border); }
+
+        .record-value {
+            font-family: monospace;
+            font-size: 0.85rem;
+            word-break: break-all;
+        }
+
+        .record-ttl { font-size: 0.72rem; color: var(--text-muted); margin-top: 0.15rem; }
+
+        .error-message {
+            background: #450a0a;
+            border: 1px solid #7f1d1d;
+            border-radius: 8px;
+            padding: 0.75rem 1rem;
+            color: #fca5a5;
+            font-size: 0.9rem;
+        }
+
+        .no-records { color: var(--text-muted); font-size: 0.9rem; padding: 0.5rem; }
+
+        /* Comparison */
+        .comparison-title {
+            margin-bottom: 1rem;
+            padding-bottom: 0.75rem;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .comparison-title h3 { font-size: 1.1rem; margin-bottom: 0.25rem; }
+        .comparison-title p { font-size: 0.85rem; color: var(--text-muted); }
+
+        .comparison-analysis {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            padding: 1rem;
+            margin-bottom: 1rem;
+        }
+
+        .performance-stats {
+            display: flex;
+            gap: 1.5rem;
+            margin: 0.5rem 0;
+            flex-wrap: wrap;
+        }
+
+        .stat-row { display: flex; gap: 0.75rem; }
+        .stat-name { color: var(--text-muted); font-size: 0.85rem; }
+        .stat-data { font-weight: 600; font-size: 0.85rem; }
+
+        .performance-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 0.75rem;
+            font-size: 0.85rem;
+        }
+
+        .performance-table th, .performance-table td {
+            padding: 0.4rem 0.75rem;
+            text-align: left;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .performance-table th { color: var(--text-muted); font-weight: 600; }
+
+        /* Modal */
+        #modalOverlay {
+            position: fixed; inset: 0;
+            background: rgba(0,0,0,0.7);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+            opacity: 0;
+            transition: opacity 0.25s;
+        }
+
+        #modalOverlay.show { opacity: 1; }
+
+        .modal {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            padding: 1.5rem;
+            max-width: 520px;
+            width: 90%;
+            max-height: 80vh;
+            overflow-y: auto;
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1rem;
+        }
+
+        .modal-header h3 { font-size: 1.05rem; }
+
+        .modal-close {
+            background: none;
+            border: none;
+            color: var(--text-muted);
+            cursor: pointer;
+            font-size: 1.2rem;
+            padding: 0.2rem 0.5rem;
+            border-radius: 4px;
+        }
+
+        .modal-close:hover { background: var(--border); }
+
+        .about-content ul, .help-content ul { padding-left: 1.2rem; }
+        .about-content li, .help-content li { margin-bottom: 0.25rem; font-size: 0.9rem; }
+        .about-content p, .help-content p { font-size: 0.9rem; margin-bottom: 0.4rem; }
+        .help-content h5 { margin: 0.75rem 0 0.25rem; color: var(--accent); }
+
+        /* Notification */
+        .notification {
+            position: fixed;
+            bottom: 1.5rem;
+            right: 1.5rem;
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 0.75rem 1rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-size: 0.88rem;
+            max-width: 360px;
+            opacity: 0;
+            transform: translateY(10px);
+            transition: all 0.3s;
+            z-index: 2000;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.4);
+        }
+
+        .notification.show { opacity: 1; transform: translateY(0); }
+        .notification.success { border-color: var(--green); }
+        .notification.error   { border-color: var(--red); }
+        .notification.warning { border-color: var(--yellow); }
+
+        /* Footer */
+        footer {
+            text-align: center;
+            padding: 2rem 1rem;
+            color: var(--text-muted);
+            font-size: 0.85rem;
+            border-top: 1px solid var(--border);
+            margin-top: 2rem;
+        }
+
+        footer a {
+            color: var(--accent);
+            text-decoration: none;
+            cursor: pointer;
+        }
+
+        .hidden { display: none !important; }
+
+        @media (max-width: 600px) {
+            .search-row { flex-direction: column; }
+            .action-row { flex-wrap: wrap; }
+            .records-grid { grid-template-columns: 1fr; }
+        }
+    </style>
+</head>
+<body>
+
+<header>
+    <h1>🌐 <span>DNS</span> 查询工具</h1>
+    <div class="header-status">
+        <div class="status-dot"></div>
+        <span>服务正常</span>
+    </div>
+</header>
+
+<main>
+    <!-- 搜索卡片 -->
+    <div class="search-card">
+        <div class="search-row">
+            <input type="text" id="domainInput" placeholder="输入域名，如 example.com" autocomplete="off" spellcheck="false">
+            <button class="btn btn-primary" id="lookupBtn">🔍 查询</button>
+        </div>
+
+        <div class="action-row">
+            <button class="btn btn-secondary" id="advancedToggle">⚙️ 显示高级选项</button>
+            <button class="btn btn-secondary" id="compareBtn">🔄 DNS 比较</button>
+            <button class="btn btn-secondary" id="batchToggle">📊 批量查询</button>
+        </div>
+
+        <div class="examples">
+            <span class="examples-label">示例：</span>
+            <button class="example-btn">google.com</button>
+            <button class="example-btn">cloudflare.com</button>
+            <button class="example-btn">github.com</button>
+            <button class="example-btn">example.com</button>
+        </div>
+
+        <!-- 高级选项 -->
+        <div class="advanced-panel hidden" id="advancedOptions">
+            <div class="advanced-grid">
+                <div class="form-group">
+                    <label>DNS 服务器</label>
+                    <select id="dnsServerSelect">
+                        <option value="">默认 (Google DNS)</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>记录类型（可多选）</label>
+                    <select id="dnsTypeSelect" multiple></select>
+                </div>
+                <div class="form-group">
+                    <label>超时时间（秒）</label>
+                    <input type="number" id="timeoutInput" value="5" min="1" max="30">
+                </div>
+                <div class="form-group">
+                    <label>自定义 DNS（覆盖上方选择）</label>
+                    <input type="text" id="customDnsInput" placeholder="IP、IP:Port 或 hostname:Port">
+                    <div style="font-size:0.75rem;color:var(--text-muted);margin-top:0.25rem">
+                        例：1.1.1.1 &nbsp;/&nbsp; 1.1.1.1:53 &nbsp;/&nbsp; https://dns.google/dns-query &nbsp;/&nbsp; your.host/doh-path
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 批量查询 -->
+        <div class="batch-panel hidden" id="batchInputArea">
+            <label style="display:block;font-size:0.85rem;color:var(--text-muted);margin-bottom:0.4rem;">
+                每行一个域名（最多 20 个）
+            </label>
+            <textarea id="batchDomains" placeholder="google.com&#10;cloudflare.com&#10;github.com"></textarea>
+            <div style="margin-top:0.5rem;">
+                <button class="btn btn-primary" id="batchLookupBtn">📊 开始批量查询</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 加载动画 -->
+    <div id="loadingIndicator" class="hidden">
+        <div class="spinner"></div>
+        <div>查询中，请稍候...</div>
+    </div>
+
+    <!-- 结果区域 -->
+    <div id="resultsSection" class="hidden">
+        <div class="results-header">
+            <h2>查询结果</h2>
+            <div class="results-actions">
+                <button class="btn btn-secondary" id="refreshBtn">🔄 刷新</button>
+                <button class="btn btn-secondary" id="exportBtn">💾 导出</button>
+                <button class="btn btn-danger" id="clearBtn">🗑 清空</button>
+            </div>
+        </div>
+        <div id="resultsContent"></div>
+    </div>
+</main>
+
+<footer>
+    <p>
+        DNS 查询工具 · 
+        <a data-action="about">关于</a> · 
+        <a data-action="help">帮助</a> · 
+        <a data-action="stats">统计</a>
+    </p>
+    <p style="margin-top:0.4rem;font-size:0.78rem;">
+        Node.js + Python + Go · 
+        <a href="https://github.com/cs3306/dns-tool" target="_blank">GitHub</a>
+    </p>
+</footer>
+
+<!-- 模态框 -->
+<div id="modalOverlay" class="hidden">
+    <div class="modal">
+        <div class="modal-header">
+            <h3 id="modalTitle"></h3>
+            <button class="modal-close">✕</button>
+        </div>
+        <div id="modalBody"></div>
+    </div>
+</div>
+
+<script src="/script.js"></script>
+</body>
+</html>

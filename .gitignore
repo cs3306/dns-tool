@@ -1,0 +1,44 @@
+# Node
+node_modules/
+npm-debug.log*
+.npm
+
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+.venv/
+venv/
+*.egg-info/
+
+# Go
+dns-backend/dns-backend
+dns-backend/bin/
+
+# Docker
+.dockerignore
+
+# Editor
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# ── Sensitive / local config ──────────────────────────────────
+# Never commit actual env files; only .env.example goes to git
+.env
+.env.local
+.env.production
+.env.*
+!.env.example
+
+# Local docker-compose overrides (put real domain/port here)
+docker-compose.override.yml
+docker-compose.local.yml
+
+# Nginx config contains server-specific paths, manage separately
+nginx.conf

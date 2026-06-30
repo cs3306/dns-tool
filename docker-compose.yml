@@ -1,0 +1,70 @@
+version: '3.8'
+
+services:
+  frontend:
+    build:
+      context: ./dns-frontend/app
+      dockerfile: Dockerfile
+    container_name: dns-frontend
+    ports:
+      - "127.0.0.1:3000:3000"
+    environment:
+      - NODE_ENV=production
+      - PORT=3000
+      - MIDDLEWARE_URL=http://middleware:5000
+    depends_on:
+      middleware:
+        condition: service_healthy
+    restart: unless-stopped
+    networks:
+      - dns-network
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:3000/health || exit 1"]
+      interval: 30s
+      timeout: 10s
+      start_period: 5s
+      retries: 3
+
+  middleware:
+    build:
+      context: ./dns-middleware/app
+      dockerfile: Dockerfile
+    container_name: dns-middleware
+    environment:
+      - BACKEND_URL=http://backend:8080
+      - CACHE_SIZE=1000
+      - CACHE_TTL=300
+    depends_on:
+      backend:
+        condition: service_healthy
+    restart: unless-stopped
+    networks:
+      - dns-network
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:5000/health || exit 1"]
+      interval: 30s
+      timeout: 10s
+      start_period: 5s
+      retries: 3
+
+  backend:
+    build:
+      context: ./dns-backend
+      dockerfile: Dockerfile
+    container_name: dns-backend
+    environment:
+      - GIN_MODE=release
+      - PORT=8080
+    restart: unless-stopped
+    networks:
+      - dns-network
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:8080/health || exit 1"]
+      interval: 30s
+      timeout: 10s
+      start_period: 5s
+      retries: 3
+
+networks:
+  dns-network:
+    driver: bridge
